@@ -16,9 +16,14 @@ app.use(bodyParser.json());
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const PRICE_ONE_TIME = process.env.STRIPE_PRICE_ONE_TIME || "REPLACE_WITH_ONE_TIME_PRICE_ID";
-const PRICE_SUB = process.env.STRIPE_PRICE_SUB || "REPLACE_WITH_SUB_PRICE_ID";
+const PRICE_ONE_TIME = process.env.STRIPE_PRICE_ONE_TIME;
+const PRICE_SUB = process.env.STRIPE_PRICE_SUB;
 
+if (!PRICE_ONE_TIME || !PRICE_SUB) {
+  throw new Error(
+    "Missing Stripe price IDs. Please set STRIPE_PRICE_ONE_TIME and STRIPE_PRICE_SUB environment variables."
+  );
+}
 let subscriptions = {};
 let singlePurchases = {};
 
