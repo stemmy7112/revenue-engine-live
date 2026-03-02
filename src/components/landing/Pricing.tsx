@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Check, ArrowRight, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { toast } from "@/components/ui/sonner";
 
 const tiers = [
   {
@@ -14,6 +15,7 @@ const tiers = [
       "Email support",
     ],
     popular: false,
+    checkoutType: "payment",
   },
   {
     name: "Pro",
@@ -28,6 +30,7 @@ const tiers = [
       "Referral dashboard",
     ],
     popular: true,
+    checkoutType: "sub",
   },
   {
     name: "Scale",
@@ -42,10 +45,53 @@ const tiers = [
       "White-label reports",
     ],
     popular: false,
+    checkoutType: "sub",
   },
 ];
 
 const Pricing = () => {
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+
+  const handleCheckout = async (checkoutType: "sub" | "payment", tierName: string) => {
+    try {
+      setLoadingTier(tierName);
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
+      const checkoutEndpoint = apiBaseUrl
+        ? `${apiBaseUrl}/create-checkout-session`
+        : "/api/create-checkout-session";
+      const response = await fetch(checkoutEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type: checkoutType }),
+      });
+
+      let data: { error?: string; url?: string } | null = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to start checkout");
+      }
+
+      if (!data?.url) {
+        throw new Error("Checkout URL was not returned by the server");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to start checkout right now";
+      toast.error(message);
+    } finally {
+      setLoadingTier(null);
+    }
+  };
+
   return (
     <section id="pricing" className="py-24 relative">
       <div className="absolute inset-0 grid-pattern opacity-20" />
@@ -103,17 +149,19 @@ const Pricing = () => {
                 ))}
               </ul>
 
-              <Link
-                to="/auth"
+              <button
+                type="button"
+                onClick={() => handleCheckout(tier.checkoutType, tier.name)}
+                disabled={loadingTier === tier.name}
                 className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                   tier.popular
                     ? "bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-glow-lg hover:scale-[1.02]"
                     : "border border-border text-secondary-foreground hover:bg-secondary"
-                }`}
+                } ${loadingTier === tier.name ? "opacity-70 cursor-not-allowed" : ""}`}
               >
-                Get Started
+                {loadingTier === tier.name ? "Processing..." : "Get Started"}
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </button>
             </motion.div>
           ))}
         </div>

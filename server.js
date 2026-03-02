@@ -13,17 +13,15 @@ app.use(express.static("public"));
 app.use("/webhook", bodyParser.raw({ type: "application/json" }));
 app.use(bodyParser.json());
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const openaiApiKey = process.env.OPENAI_API_KEY;
+
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+const openai = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
 
 const PRICE_ONE_TIME = process.env.STRIPE_PRICE_ONE_TIME;
 const PRICE_SUB = process.env.STRIPE_PRICE_SUB;
 
-if (!PRICE_ONE_TIME || !PRICE_SUB) {
-  throw new Error(
-    "Missing Stripe price IDs. Please set STRIPE_PRICE_ONE_TIME and STRIPE_PRICE_SUB environment variables."
-  );
-}
 let subscriptions = {};
 let singlePurchases = {};
 
@@ -33,22 +31,75 @@ const generateLimiter = rateLimit({
   message: { error: "Too many requests, please try again later." }
 });
 
-app.post("/create-checkout-session", async (req, res) => {
-  const { type } = req.body;
-  const priceId = type === "sub" ? PRICE_SUB : PRICE_ONE_TIME;
-
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    mode: type === "sub" ? "subscription" : "payment",
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${req.headers.origin}/success.html`,
-    cancel_url: `${req.headers.origin}/`
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    integrations: {
+      stripe: Boolean(stripeSecretKey),
+      stripePrices: Boolean(PRICE_ONE_TIME && PRICE_SUB),
+      stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
+      openai: Boolean(openaiApiKey)
+    }
   });
+});
 
-  res.json({ id: session.id });
+app.post("/create-checkout-session", async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({
+      error: "Checkout unavailable: STRIPE_SECRET_KEY is not configured."
+    });
+  }
+
+  if (!PRICE_ONE_TIME || !PRICE_SUB) {
+    return res.status(503).json({
+      error:
+        "Checkout unavailable: STRIPE_PRICE_ONE_TIME and STRIPE_PRICE_SUB must be configured."
+    });
+  }
+
+  try {
+    const { type } = req.body;
+    if (type !== "sub" && type !== "payment") {
+      return res.status(400).json({
+        error: "Invalid checkout type. Expected 'sub' or 'payment'."
+      });
+    }
+
+    const priceId = type === "sub" ? PRICE_SUB : PRICE_ONE_TIME;
+    const origin = req.headers.origin || process.env.APP_BASE_URL || "http://localhost:5173";
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: type === "sub" ? "subscription" : "payment",
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${origin}/success`,
+      cancel_url: `${origin}/cancel`
+    });
+
+    if (!session.url) {
+      return res.status(500).json({ error: "Checkout URL was not created" });
+    }
+
+    res.json({ id: session.id, url: session.url });
+  } catch (err) {
+    console.error("Checkout session creation failed:", err);
+    res.status(500).json({ error: "Failed to create checkout session" });
+  }
 });
 
 app.post("/webhook", (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({
+      error: "Webhook unavailable: STRIPE_SECRET_KEY is not configured."
+    });
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).json({
+      error: "Webhook unavailable: STRIPE_WEBHOOK_SECRET is not configured."
+    });
+  }
+
   const sig = req.headers["stripe-signature"];
   let event;
 
@@ -78,6 +129,12 @@ app.post("/webhook", (req, res) => {
 });
 
 app.post("/generate", generateLimiter, async (req, res) => {
+  if (!openai) {
+    return res.status(503).json({
+      error: "Document generation unavailable: OPENAI_API_KEY is not configured."
+    });
+  }
+
   const { email, content, letterType } = req.body;
 
   if (!singlePurchases[email] && !subscriptions[email]) {
