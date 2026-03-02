@@ -151,7 +151,7 @@ const Pricing = () => {
 
               <button
                 type="button"
-                onClick={() => handleCheckout(tier.checkoutType, tier.name)}
+                onClick={() => handleCheckout(tier.checkoutType as "payment" | "sub", tier.name)}
                 disabled={loadingTier === tier.name}
                 className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                   tier.popular
