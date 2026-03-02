@@ -14,7 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      opportunities: {
+        Row: {
+          automation_level: number
+          category: string
+          competition_score: number
+          created_at: string
+          description: string | null
+          id: string
+          score: number | null
+          speed_to_cash: number
+          time_to_cash: string | null
+          title: string
+        }
+        Insert: {
+          automation_level?: number
+          category: string
+          competition_score?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          score?: number | null
+          speed_to_cash?: number
+          time_to_cash?: string | null
+          title: string
+        }
+        Update: {
+          automation_level?: number
+          category?: string
+          competition_score?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          score?: number | null
+          speed_to_cash?: number
+          time_to_cash?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          plan: string | null
+          referral_code: string | null
+          referred_by: string | null
+          stripe_customer_id: string | null
+          subscription_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          plan?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          plan?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          converted: boolean | null
+          created_at: string
+          id: string
+          referred_email: string | null
+          referred_user_id: string | null
+          referrer_id: string
+        }
+        Insert: {
+          converted?: boolean | null
+          created_at?: string
+          id?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_id: string
+        }
+        Update: {
+          converted?: boolean | null
+          created_at?: string
+          id?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_user_id_fkey"
+            columns: ["referred_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
