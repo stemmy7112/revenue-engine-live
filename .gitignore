@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables / secrets — never commit these
+.env
+.env.*
+Env.txt
+
+# Generated PDF files from server
+*.pdf

@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import Stripe from "stripe";
 import OpenAI from "openai";
 import PDFDocument from "pdfkit";
@@ -15,11 +16,17 @@ app.use(bodyParser.json());
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const PRICE_ONE_TIME = "REPLACE_WITH_ONE_TIME_PRICE_ID";
-const PRICE_SUB = "REPLACE_WITH_SUB_PRICE_ID";
+const PRICE_ONE_TIME = process.env.STRIPE_PRICE_ONE_TIME || "REPLACE_WITH_ONE_TIME_PRICE_ID";
+const PRICE_SUB = process.env.STRIPE_PRICE_SUB || "REPLACE_WITH_SUB_PRICE_ID";
 
 let subscriptions = {};
 let singlePurchases = {};
+
+const generateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  message: { error: "Too many requests, please try again later." }
+});
 
 app.post("/create-checkout-session", async (req, res) => {
   const { type } = req.body;
@@ -65,31 +72,40 @@ app.post("/webhook", (req, res) => {
   res.json({ received: true });
 });
 
-app.post("/generate", async (req, res) => {
+app.post("/generate", generateLimiter, async (req, res) => {
   const { email, content, letterType } = req.body;
 
   if (!singlePurchases[email] && !subscriptions[email]) {
     return res.status(403).json({ error: "Payment required" });
   }
 
-  const prompt = `Write a professional ${letterType}. Details: ${content}`;
+  try {
+    const prompt = `Write a professional ${letterType}. Details: ${content}`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }]
-  });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }]
+    });
 
-  const text = completion.choices[0].message.content;
+    const text = completion.choices[0].message.content;
 
-  const doc = new PDFDocument();
-  const filePath = `./${uuidv4()}.pdf`;
-  doc.pipe(fs.createWriteStream(filePath));
-  doc.fontSize(12).text(text);
-  doc.end();
+    const doc = new PDFDocument();
+    const filePath = `./${uuidv4()}.pdf`;
+    doc.pipe(fs.createWriteStream(filePath));
+    doc.fontSize(12).text(text);
+    doc.end();
 
-  doc.on("finish", () => {
-    res.download(filePath);
-  });
+    doc.on("finish", () => {
+      res.download(filePath, () => {
+        fs.unlink(filePath, (err) => {
+          if (err) console.error("Failed to delete PDF:", err);
+        });
+      });
+    });
+  } catch (err) {
+    console.error("Generate error:", err);
+    res.status(500).json({ error: "Failed to generate document" });
+  }
 });
 
 app.listen(process.env.PORT || 10000, () => console.log("Server running"));
