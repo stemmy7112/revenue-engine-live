@@ -1,37 +1,13 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Instant Legal Letter Generator</title>
-</head>
-<body>
-  <h1>Generate Court Letters Instantly</h1>
-
-  <textarea id="content" placeholder="Describe your situation"></textarea>
-  <select id="type">
-    <option>Letter to Judge</option>
-    <option>Probation Explanation Letter</option>
-    <option>Character Reference Letter</option>
-    <option>Fine Reduction Request</option>
-  </select>
-  <input id="email" placeholder="Your email"/>
-
-  <button onclick="pay('one')">$9.99 Single Letter</button>
-  <button onclick="pay('sub')">$19 Monthly Unlimited</button>
-
-<script src="https://js.stripe.com/v3/"></script>
-<script>
-const stripe = Stripe("REPLACE_WITH_STRIPE_PUBLISHABLE_KEY");
-
-async function pay(type){
-  const res = await fetch("/create-checkout-session", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ type })
-  });
-  const data = await res.json();
-  stripe.redirectToCheckout({ sessionId: data.id });
-}
-</script>
-
-</body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoIncome Engine — Find The Fastest Way To Make Money Online</title>
+    <meta name="description" content="AI-powered income opportunity discovery. Every opportunity ranked by automation level, speed to cash, and competition." />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
