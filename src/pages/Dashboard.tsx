@@ -1,121 +1,179 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Zap, TrendingUp, Clock, BarChart3, ArrowUpRight, Shield } from "lucide-react";
-import { Link } from "react-router-dom";
-import { mockOpportunities, type Opportunity } from "@/lib/opportunities";
+import { useNavigate } from "react-router-dom";
+import { Zap, TrendingUp, Clock, Bot, Shield, LogOut, Crown, ExternalLink } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
-const ScoreBadge = ({ score }: { score: number }) => {
-  const color =
-    score >= 50 ? "text-primary border-glow/30 bg-glow/10" :
-    score >= 30 ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/10" :
-    "text-muted-foreground border-border bg-muted";
-
-  return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold ${color}`}>
-      <TrendingUp className="w-3 h-3" />
-      {score}
-    </span>
-  );
-};
-
-const MeterBar = ({ value, max = 10, label }: { value: number; max?: number; label: string }) => (
-  <div className="flex items-center gap-2 text-xs">
-    <span className="text-muted-foreground w-20 shrink-0">{label}</span>
-    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-      <div
-        className="h-full rounded-full bg-gradient-primary"
-        style={{ width: `${(value / max) * 100}%` }}
-      />
-    </div>
-    <span className="text-muted-foreground w-4 text-right">{value}</span>
-  </div>
-);
-
-const OpportunityCard = ({ opp, index }: { opp: Opportunity; index: number }) => (
-  <motion.div
-    className="p-5 rounded-xl bg-card border border-border hover:border-glow/20 transition-all group"
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: index * 0.05 }}
-  >
-    <div className="flex items-start justify-between mb-3">
-      <div>
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">{opp.category}</span>
-        <h3 className="text-base font-semibold mt-0.5 group-hover:text-primary transition-colors">{opp.title}</h3>
-      </div>
-      <ScoreBadge score={opp.score} />
-    </div>
-    <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{opp.description}</p>
-    <div className="space-y-2 mb-4">
-      <MeterBar value={opp.automationLevel} label="Automation" />
-      <MeterBar value={opp.speedToCash} label="Speed" />
-      <MeterBar value={opp.competitionScore} label="Competition" />
-    </div>
-    <div className="flex items-center justify-between pt-3 border-t border-border">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Clock className="w-3 h-3" />
-        {opp.timeToCash}
-      </div>
-      <button className="text-xs font-medium text-primary flex items-center gap-1 hover:underline">
-        View Details <ArrowUpRight className="w-3 h-3" />
-      </button>
-    </div>
-  </motion.div>
-);
+interface Opportunity {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  automation_level: number;
+  speed_to_cash: number;
+  competition_score: number;
+  score: number;
+  time_to_cash: string;
+}
 
 const Dashboard = () => {
+  const { user, loading, subscription, signOut, checkSubscription } = useAuth();
+  const navigate = useNavigate();
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) navigate("/auth");
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchOpportunities = async () => {
+      const { data } = await supabase
+        .from("opportunities")
+        .select("*")
+        .order("score", { ascending: false });
+      setOpportunities((data as Opportunity[]) || []);
+      setLoadingData(false);
+    };
+    fetchOpportunities();
+  }, [user]);
+
+  useEffect(() => {
+    if (user) checkSubscription();
+  }, [user]);
+
+  const handleManageSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw new Error(error.message);
+      if (data?.url) window.open(data.url, "_blank");
+    } catch (error: any) {
+      toast.error(error.message || "Could not open subscription manager");
+    }
+  };
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  const gated = !subscription.subscribed;
+  const displayedOpportunities = gated ? opportunities.slice(0, 3) : opportunities;
+
+  const getScoreColor = (score: number) => {
+    if (score >= 3) return "text-emerald-400";
+    if (score >= 2) return "text-amber-400";
+    return "text-red-400";
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Topbar */}
-      <header className="border-b border-border glass fixed top-0 left-0 right-0 z-50">
-        <div className="container max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 font-bold">
-            <div className="w-7 h-7 rounded-lg bg-gradient-primary flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
+      <header className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="container max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-lg">
+            <Zap className="w-5 h-5 text-primary" />
             AutoIncome
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-            <div className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium flex items-center gap-1.5">
-              <Shield className="w-3 h-3" />
-              Demo Mode
-            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {subscription.subscribed && (
+              <span className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
+                <Crown className="w-3 h-3" />
+                {subscription.plan?.toUpperCase()}
+              </span>
+            )}
+            {subscription.subscribed && (
+              <button
+                onClick={handleManageSubscription}
+                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+              >
+                Manage <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+            <button onClick={signOut} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
+              <LogOut className="w-4 h-4" /> Sign out
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="pt-24 pb-16 container max-w-6xl mx-auto px-6">
-        <div className="mb-10">
+      <main className="container max-w-7xl mx-auto px-6 py-10">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Opportunity Dashboard</h1>
           <p className="text-muted-foreground">
-            Ranked by our algorithm: <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono">
-              Score = (Automation × 0.4) + (Speed × 0.4) − (Competition × 0.2)
-            </code>
+            Ranked by Score = (Automation × 0.4) + (Speed × 0.4) − (Competition × 0.2)
           </p>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {[
-            { icon: BarChart3, label: "Total Opportunities", value: mockOpportunities.length },
-            { icon: TrendingUp, label: "Avg Score", value: (mockOpportunities.reduce((a, o) => a + o.score, 0) / mockOpportunities.length).toFixed(1) },
-            { icon: Zap, label: "High Automation", value: mockOpportunities.filter((o) => o.automationLevel >= 7).length },
-            { icon: Clock, label: "Fast Cash (<48h)", value: mockOpportunities.filter((o) => o.speedToCash >= 8).length },
-          ].map((stat) => (
-            <div key={stat.label} className="p-4 rounded-xl bg-card border border-border">
-              <stat.icon className="w-4 h-4 text-primary mb-2" />
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="text-xs text-muted-foreground">{stat.label}</div>
-            </div>
-          ))}
+        <div className="grid gap-4">
+          {loadingData ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-xl bg-card border border-border animate-pulse" />
+            ))
+          ) : (
+            displayedOpportunities.map((opp, i) => (
+              <motion.div
+                key={opp.id}
+                className="rounded-xl bg-card border border-border p-6 flex flex-col sm:flex-row sm:items-center gap-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {opp.category}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg">{opp.title}</h3>
+                  <p className="text-sm text-muted-foreground">{opp.description}</p>
+                </div>
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-1" title="Automation">
+                    <Bot className="w-4 h-4 text-primary" />
+                    <span>{opp.automation_level}</span>
+                  </div>
+                  <div className="flex items-center gap-1" title="Speed to Cash">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>{opp.speed_to_cash}</span>
+                  </div>
+                  <div className="flex items-center gap-1" title="Competition">
+                    <Shield className="w-4 h-4 text-muted-foreground" />
+                    <span>{opp.competition_score}</span>
+                  </div>
+                  <div className="flex items-center gap-1 font-bold" title="Score">
+                    <TrendingUp className={`w-4 h-4 ${getScoreColor(Number(opp.score))}`} />
+                    <span className={getScoreColor(Number(opp.score))}>{Number(opp.score).toFixed(1)}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
 
-        {/* Opportunities grid */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {mockOpportunities.map((opp, i) => (
-            <OpportunityCard key={opp.id} opp={opp} index={i} />
-          ))}
-        </div>
+        {gated && (
+          <motion.div
+            className="mt-8 text-center p-8 rounded-xl bg-card border border-primary/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <h3 className="text-xl font-bold mb-2">Unlock All Opportunities</h3>
+            <p className="text-muted-foreground mb-4">
+              Subscribe to see all {opportunities.length} ranked opportunities with full details.
+            </p>
+            <button
+              onClick={() => navigate("/pricing")}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-primary-foreground font-semibold shadow-glow hover:shadow-glow-lg transition-all"
+            >
+              View Plans
+            </button>
+          </motion.div>
+        )}
       </main>
     </div>
   );

@@ -1,12 +1,41 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Zap, Mail, Lock, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Signed in successfully");
+        navigate("/dashboard");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        toast.success("Check your email to confirm your account");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative">
@@ -32,13 +61,7 @@ const Auth = () => {
         </div>
 
         <div className="p-8 rounded-xl bg-card border border-border">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              // Will be connected to Supabase auth
-            }}
-            className="space-y-4"
-          >
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Email</label>
               <div className="relative">
@@ -72,9 +95,10 @@ const Auth = () => {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-primary text-primary-foreground font-semibold shadow-glow hover:shadow-glow-lg transition-all hover:scale-[1.02]"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-primary text-primary-foreground font-semibold shadow-glow hover:shadow-glow-lg transition-all hover:scale-[1.02] disabled:opacity-70"
             >
-              {isLogin ? "Sign In" : "Create Account"}
+              {loading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>

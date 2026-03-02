@@ -1,11 +1,15 @@
 import { motion } from "framer-motion";
 import { Check, ArrowRight, Star } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const tiers = [
   {
     name: "Starter",
+    tier: "starter",
     price: 9,
     description: "Perfect for exploring opportunities",
     features: [
@@ -15,10 +19,10 @@ const tiers = [
       "Email support",
     ],
     popular: false,
-    checkoutType: "payment",
   },
   {
     name: "Pro",
+    tier: "pro",
     price: 29,
     description: "For serious income builders",
     features: [
@@ -30,10 +34,10 @@ const tiers = [
       "Referral dashboard",
     ],
     popular: true,
-    checkoutType: "sub",
   },
   {
     name: "Scale",
+    tier: "scale",
     price: 79,
     description: "For teams and agencies",
     features: [
@@ -45,47 +49,32 @@ const tiers = [
       "White-label reports",
     ],
     popular: false,
-    checkoutType: "sub",
   },
 ];
 
 const Pricing = () => {
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const handleCheckout = async (checkoutType: "sub" | "payment", tierName: string) => {
+  const handleCheckout = async (tier: string, tierName: string) => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
     try {
       setLoadingTier(tierName);
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
-      const checkoutEndpoint = apiBaseUrl
-        ? `${apiBaseUrl}/create-checkout-session`
-        : "/api/create-checkout-session";
-      const response = await fetch(checkoutEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ type: checkoutType }),
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: { tier },
       });
 
-      let data: { error?: string; url?: string } | null = null;
-      try {
-        data = await response.json();
-      } catch {
-        data = null;
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to start checkout");
-      }
-
-      if (!data?.url) {
-        throw new Error("Checkout URL was not returned by the server");
-      }
+      if (error) throw new Error(error.message);
+      if (!data?.url) throw new Error("Checkout URL was not returned");
 
       window.location.href = data.url;
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start checkout right now";
+      const message = error instanceof Error ? error.message : "Unable to start checkout";
       toast.error(message);
     } finally {
       setLoadingTier(null);
@@ -151,7 +140,7 @@ const Pricing = () => {
 
               <button
                 type="button"
-                onClick={() => handleCheckout(tier.checkoutType as "payment" | "sub", tier.name)}
+                onClick={() => handleCheckout(tier.tier, tier.name)}
                 disabled={loadingTier === tier.name}
                 className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
                   tier.popular
