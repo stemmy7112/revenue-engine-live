@@ -6,12 +6,23 @@ import PDFDocument from "pdfkit";
 import bodyParser from "body-parser";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
-app.use(express.static("public"));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-app.use("/webhook", bodyParser.raw({ type: "application/json" }));
-app.use(bodyParser.json());
+app.set("trust proxy", 1);
+
+app.use(["/webhook", "/api/webhook"], bodyParser.raw({ type: "application/json" }));
+app.use((req, res, next) => {
+  if (req.path === "/webhook" || req.path === "/api/webhook") {
+    return next();
+  }
+
+  return bodyParser.json()(req, res, next);
+});
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -25,13 +36,23 @@ const PRICE_SUB = process.env.STRIPE_PRICE_SUB;
 let subscriptions = {};
 let singlePurchases = {};
 
+const hasAccess = (email) => Boolean(singlePurchases[email] || subscriptions[email]);
+const markAccess = (collection, email) => {
+  if (!email) {
+    return;
+  }
+
+  collection[email.toLowerCase()] = true;
+};
+const normalizeEmail = (email) => (typeof email === "string" ? email.toLowerCase() : "");
+
 const generateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   message: { error: "Too many requests, please try again later." }
 });
 
-app.get("/health", (req, res) => {
+const healthHandler = (req, res) => {
   res.status(200).json({
     status: "ok",
     integrations: {
@@ -41,9 +62,12 @@ app.get("/health", (req, res) => {
       openai: Boolean(openaiApiKey)
     }
   });
-});
+};
 
-app.post("/create-checkout-session", async (req, res) => {
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
+
+const createCheckoutSessionHandler = async (req, res) => {
   if (!stripe) {
     return res.status(503).json({
       error: "Checkout unavailable: STRIPE_SECRET_KEY is not configured."
@@ -85,9 +109,12 @@ app.post("/create-checkout-session", async (req, res) => {
     console.error("Checkout session creation failed:", err);
     res.status(500).json({ error: "Failed to create checkout session" });
   }
-});
+};
 
-app.post("/webhook", (req, res) => {
+app.post("/create-checkout-session", createCheckoutSessionHandler);
+app.post("/api/create-checkout-session", createCheckoutSessionHandler);
+
+const webhookHandler = (req, res) => {
   if (!stripe) {
     return res.status(503).json({
       error: "Webhook unavailable: STRIPE_SECRET_KEY is not configured."
@@ -115,20 +142,25 @@ app.post("/webhook", (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+    const customerEmail =
+      session.customer_email || session.customer_details?.email || session.customer?.email;
 
     if (session.mode === "payment") {
-      singlePurchases[session.customer_email] = true;
+      markAccess(singlePurchases, customerEmail);
     }
 
     if (session.mode === "subscription") {
-      subscriptions[session.customer_email] = true;
+      markAccess(subscriptions, customerEmail);
     }
   }
 
   res.json({ received: true });
-});
+};
 
-app.post("/generate", generateLimiter, async (req, res) => {
+app.post("/webhook", webhookHandler);
+app.post("/api/webhook", webhookHandler);
+
+const generateHandler = async (req, res) => {
   if (!openai) {
     return res.status(503).json({
       error: "Document generation unavailable: OPENAI_API_KEY is not configured."
@@ -136,8 +168,9 @@ app.post("/generate", generateLimiter, async (req, res) => {
   }
 
   const { email, content, letterType } = req.body;
+  const normalizedEmail = normalizeEmail(email);
 
-  if (!singlePurchases[email] && !subscriptions[email]) {
+  if (!hasAccess(normalizedEmail)) {
     return res.status(403).json({ error: "Payment required" });
   }
 
@@ -168,6 +201,20 @@ app.post("/generate", generateLimiter, async (req, res) => {
     console.error("Generate error:", err);
     res.status(500).json({ error: "Failed to generate document" });
   }
-});
+};
+
+app.post("/generate", generateLimiter, generateHandler);
+app.post("/api/generate", generateLimiter, generateHandler);
+
+const distPath = path.join(__dirname, "dist");
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+
+  app.get(/^\/(?!api|webhook).*/, (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  app.use(express.static("public"));
+}
 
 app.listen(process.env.PORT || 10000, () => console.log("Server running"));

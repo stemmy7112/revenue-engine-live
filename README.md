@@ -45,6 +45,39 @@ npm run start
 npm run dev
 ```
 
+## Production Build
+
+1. Build frontend assets:
+
+```sh
+npm run build
+```
+
+2. Start backend server (serves API + built frontend):
+
+```sh
+npm run start
+```
+
+The server automatically serves `dist/` when present and falls back to `public/` if a build does not exist.
+
+## Deployment Checklist
+
+- Build command: `npm install && npm run build`
+- Start command: `npm run start`
+- Healthcheck path: `/api/health` (or `/health`)
+- Required env vars:
+	- `STRIPE_SECRET_KEY`
+	- `STRIPE_WEBHOOK_SECRET`
+	- `STRIPE_PRICE_ONE_TIME`
+	- `STRIPE_PRICE_SUB`
+	- `OPENAI_API_KEY`
+- Recommended env vars:
+	- `APP_BASE_URL` (your deployed frontend origin)
+	- `PORT` (defaults to `10000`)
+- Optional frontend env var:
+	- `VITE_API_BASE_URL` (use only if API is on a separate domain)
+
 ## Frontend/Backend Routing in Dev
 
 - Frontend runs on `http://localhost:8080`
