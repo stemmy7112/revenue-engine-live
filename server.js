@@ -70,7 +70,7 @@ app.get("/api/health", healthHandler);
 
 const baseUrlsHandler = (req, res) => {
   res.json({
-    appBaseUrl: resolveAppBaseUrl(req.headers.origin),
+    appBaseUrl: resolveAppBaseUrl(req.get("origin")),
     viteUrl: resolveViteUrl()
   });
 };
@@ -101,7 +101,7 @@ const createCheckoutSessionHandler = async (req, res) => {
     }
 
     const priceId = type === "sub" ? PRICE_SUB : PRICE_ONE_TIME;
-    const origin = resolveAppBaseUrl(req.headers.origin);
+    const origin = resolveAppBaseUrl(req.get("origin"));
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],

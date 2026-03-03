@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
-import { resolveAppBaseUrl, resolveViteUrl } from "../../config/urls.js";
+import { DEFAULT_DEV_URL, resolveAppBaseUrl, resolveViteUrl } from "../../config/urls.js";
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -25,7 +25,7 @@ describe("resolveAppBaseUrl", () => {
   });
 
   it("falls back to the Vite dev URL when nothing is configured", () => {
-    expect(resolveAppBaseUrl()).toBe("http://localhost:8080");
+    expect(resolveAppBaseUrl()).toBe(DEFAULT_DEV_URL);
   });
 });
 
@@ -41,6 +41,6 @@ describe("resolveViteUrl", () => {
   });
 
   it("returns the default Vite dev URL when nothing is set", () => {
-    expect(resolveViteUrl()).toBe("http://localhost:8080");
+    expect(resolveViteUrl()).toBe(DEFAULT_DEV_URL);
   });
 });
