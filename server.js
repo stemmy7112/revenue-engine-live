@@ -52,6 +52,10 @@ const generateLimiter = rateLimit({
   max: 10,
   message: { error: "Too many requests, please try again later." }
 });
+const spaLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300
+});
 
 const healthHandler = (req, res) => {
   res.status(200).json({
@@ -213,7 +217,7 @@ const distPath = path.join(__dirname, "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
-  app.get(/^\/(?!api).*/, (req, res) => {
+  app.get(/^\/(?!api).*/, spaLimiter, (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {
