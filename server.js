@@ -225,7 +225,7 @@ if (fs.existsSync(distPath)) {
 }
 
 const port = process.env.PORT || 10000;
-const isVercel = Boolean(process.env.VERCEL);
+const isVercel = ["1", "true"].includes((process.env.VERCEL || "").toLowerCase());
 
 if (!isVercel) {
   app.listen(port, () => console.log(`Server running on port ${port}`));
