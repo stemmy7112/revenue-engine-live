@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { techStack } from "./tech-stack.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -66,6 +67,13 @@ const healthHandler = (req, res) => {
 
 app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
+
+const stackHandler = (req, res) => {
+  res.json({ stack: techStack });
+};
+
+app.get("/stack", stackHandler);
+app.get("/api/stack", stackHandler);
 
 const createCheckoutSessionHandler = async (req, res) => {
   if (!stripe) {
