@@ -11,12 +11,15 @@ describe("server export for Vercel", () => {
 
   it("exports the Express app without starting a listener when Vercel sets VERCEL=1", async () => {
     const listenMock = vi.fn();
+    const useMock = vi.fn();
+    const postMock = vi.fn();
+    const getMock = vi.fn();
 
     vi.doMock("express", () => {
       const mockApp = Object.assign(() => null, {
-        use: vi.fn(),
-        post: vi.fn(),
-        get: vi.fn(),
+        use: useMock,
+        post: postMock,
+        get: getMock,
         set: vi.fn(),
         listen: listenMock
       });
@@ -31,5 +34,10 @@ describe("server export for Vercel", () => {
 
     expect(typeof app).toBe("function");
     expect(listenMock).not.toHaveBeenCalled();
+    expect(getMock).toHaveBeenCalledWith("/api/health", expect.any(Function));
+    expect(getMock).toHaveBeenCalledWith("/api/stack", expect.any(Function));
+    expect(postMock).toHaveBeenCalledWith("/api/create-checkout-session", expect.any(Function));
+    expect(postMock).toHaveBeenCalledWith("/api/webhook", expect.any(Function));
+    expect(postMock).toHaveBeenCalledWith("/api/generate", expect.any(Function), expect.any(Function));
   });
 });
