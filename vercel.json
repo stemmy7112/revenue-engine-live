@@ -8,11 +8,7 @@
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.js" },
-    { "src": "/health", "dest": "/api/index.js" },
-    { "src": "/stack", "dest": "/api/index.js" },
-    { "src": "/create-checkout-session", "dest": "/api/index.js" },
-    { "src": "/webhook", "dest": "/api/index.js" },
-    { "src": "/generate", "dest": "/api/index.js" },
+    { "src": "/(health|stack|create-checkout-session|webhook|generate)", "dest": "/api/index.js" },
     { "handle": "filesystem" },
     { "src": "/.*", "dest": "/index.html" }
   ]
