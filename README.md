@@ -86,6 +86,13 @@ The server automatically serves `dist/` when present and falls back to `public/`
 - Optional frontend env var:
 	- `VITE_API_BASE_URL` (use only if API is on a separate domain)
 
+## Vercel Deployment
+
+- The repo includes `vercel.json` to deploy the static Vite build plus the Express API as a Vercel Function (`server.js`).
+- Build command: `npm install && npm run build`
+- No start command is required; Vercel serves the built frontend from `dist` and routes `/api/*` and `/webhook` to the serverless function.
+- Ensure all required environment variables are configured in your Vercel project (see `.env.example`).
+
 ## Frontend/Backend Routing in Dev
 
 - Frontend runs on `http://localhost:8080`
