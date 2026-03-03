@@ -19,11 +19,11 @@ const Index = () => {
         <Pricing />
 
         {/* Final CTA */}
-        <section className="py-24 relative overflow-hidden">
+        <section className="py-16 sm:py-24 relative overflow-hidden">
           <div className="absolute inset-0 grid-pattern opacity-20" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-glow/5 rounded-full blur-[150px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[320px] sm:w-[500px] sm:h-[500px] bg-glow/5 rounded-full blur-[120px] sm:blur-[150px]" />
           <motion.div
-            className="relative z-10 container max-w-3xl mx-auto px-6 text-center"
+            className="relative z-10 container max-w-3xl mx-auto px-4 sm:px-6 text-center"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -32,16 +32,16 @@ const Index = () => {
               <Zap className="w-3.5 h-3.5" />
               Limited spots available
             </div>
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">
               Stop Searching.{" "}
               <span className="text-gradient">Start Earning.</span>
             </h2>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-base sm:text-lg text-muted-foreground mb-8">
               Join thousands who found their fastest path to online income.
             </p>
             <Link
               to="/auth"
-              className="group inline-flex items-center gap-2 px-8 py-4 rounded-lg bg-gradient-primary text-primary-foreground font-semibold text-lg shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-lg bg-gradient-primary text-primary-foreground font-semibold text-base sm:text-lg shadow-glow hover:shadow-glow-lg transition-all duration-300 hover:scale-105"
             >
               Unlock Opportunities
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
