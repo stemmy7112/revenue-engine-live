@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import rateLimit from "express-rate-limit";
 import Stripe from "stripe";
 import OpenAI from "openai";
@@ -9,12 +10,22 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { techStack } from "./tech-stack.js";
+import dotenv from "dotenv";
+import { validateGenerateRequest } from "./validation.js";
 
+dotenv.config();
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", 1);
+
+const allowedOrigins = [process.env.APP_BASE_URL, "http://localhost:8080"].filter(Boolean);
+app.use(
+  cors({
+    origin: allowedOrigins.length ? allowedOrigins : undefined,
+  })
+);
 
 app.use(["/webhook", "/api/webhook"], bodyParser.raw({ type: "application/json" }));
 app.use((req, res, next) => {
@@ -175,7 +186,15 @@ const generateHandler = async (req, res) => {
     });
   }
 
-  const { email, content, letterType } = req.body;
+  const validation = validateGenerateRequest(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: "Invalid request payload",
+      details: validation.errors
+    });
+  }
+
+  const { email, content, letterType } = validation.data;
   const normalizedEmail = normalizeEmail(email);
 
   if (!hasAccess(normalizedEmail)) {

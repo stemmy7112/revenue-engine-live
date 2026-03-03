@@ -11,6 +11,12 @@ Revenue Engine is a React + Vite frontend with an Express backend for Stripe che
 - Stripe
 - OpenAI
 
+## Architecture
+
+- Frontend (Vite + React/TS + Tailwind/shadcn/ui) owns auth UI, pricing, checkout triggers, and analytics dashboards while calling `/api/*` through the Vite dev proxy.
+- Backend (Express) owns billing endpoints, Stripe checkout + webhook verification, OpenAI orchestration, and any database writes. Stripe/OpenAI keys stay server-side (dotenv), with only `VITE_*` public values exposed to the browser.
+- Stripe flow: frontend requests `POST /api/create-checkout-session` → backend creates the session → Stripe redirects → webhook updates subscription state.
+
 ## Local Setup
 
 1. Install dependencies:
@@ -25,24 +31,26 @@ npm install
 cp .env.example .env
 ```
 
-3. Fill in required server values in `.env`:
+3. Fill in required server values in `.env` (keep these server-side; do **not** prefix them with `VITE_`):
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_PRICE_ONE_TIME`
 - `STRIPE_PRICE_SUB`
 - `OPENAI_API_KEY`
+- Optional: `APP_BASE_URL`, `PORT`, `VITE_API_BASE_URL` (public-only)
 
-4. Start backend:
-
-```sh
-npm run start
-```
-
-5. In a second terminal, start frontend:
+4. Start both backend and frontend together (runs Express on `10000` and Vite on `8080` via proxy):
 
 ```sh
 npm run dev
+```
+
+5. (Optional) Run services individually:
+
+```sh
+npm run dev:server # backend only
+npm run dev:client # frontend only
 ```
 
 ## Production Build
@@ -108,3 +116,4 @@ stripe listen --forward-to localhost:10000/webhook
 - Do not commit real keys into repository files
 - Rotate keys immediately if they were exposed
 - Keep `.env` local only
+- OpenAI routes are rate limited and validated server-side to protect cost/reliability
