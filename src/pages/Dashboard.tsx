@@ -43,7 +43,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) checkSubscription();
-  }, [user]);
+  }, [user, checkSubscription]);
 
   const handleManageSubscription = async () => {
     try {
