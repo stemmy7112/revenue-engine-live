@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 describe("server export for Vercel", () => {
   const originalEnv = process.env.VERCEL;
+  const originalPort = process.env.PORT;
 
   afterEach(() => {
     process.env.VERCEL = originalEnv;
+    process.env.PORT = originalPort;
     vi.resetModules();
     vi.clearAllMocks();
   });
@@ -39,5 +41,30 @@ describe("server export for Vercel", () => {
     expect(postMock).toHaveBeenCalledWith("/api/create-checkout-session", expect.any(Function));
     expect(postMock).toHaveBeenCalledWith("/api/webhook", expect.any(Function));
     expect(postMock).toHaveBeenCalledWith("/api/generate", expect.any(Function), expect.any(Function));
+  });
+
+  it("starts the server locally when VERCEL is not set", async () => {
+    const listenMock = vi.fn();
+
+    vi.doMock("express", () => {
+      const mockApp = Object.assign(() => null, {
+        use: vi.fn(),
+        post: vi.fn(),
+        get: vi.fn(),
+        set: vi.fn(),
+        listen: listenMock
+      });
+      const expressFn = () => mockApp;
+      expressFn.static = vi.fn(() => vi.fn());
+
+      return { __esModule: true, default: expressFn };
+    });
+
+    process.env.VERCEL = undefined;
+    process.env.PORT = "3001";
+
+    await import("../../server.js");
+
+    expect(listenMock).toHaveBeenCalledWith("3001", expect.any(Function));
   });
 });
