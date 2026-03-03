@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Zap, TrendingUp, Clock, Bot, Shield, LogOut, Crown, ExternalLink } from "lucide-react";
@@ -19,10 +19,12 @@ interface Opportunity {
 }
 
 const Dashboard = () => {
-  const { user, loading, subscription, signOut, checkSubscription } = useAuth();
+  const { user, loading, subscription, signOut, checkSubscription: checkSubscriptionRaw } = useAuth();
   const navigate = useNavigate();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+
+  const checkSubscription = useCallback(() => checkSubscriptionRaw(), [checkSubscriptionRaw]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -52,10 +54,10 @@ const Dashboard = () => {
       if (data?.url) window.open(data.url, "_blank");
     } catch (error: unknown) {
       if (error instanceof Error) {
-        toast.error(error.message || "Could not open subscription manager");
-      } else {
-        toast.error("Could not open subscription manager");
+        toast.error(error.message);
+        return;
       }
+      toast.error("Could not open subscription manager");
     }
   };
 
