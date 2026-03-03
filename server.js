@@ -69,9 +69,8 @@ app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 
 const baseUrlsHandler = (req, res) => {
-  // Origin header can be missing; resolveAppBaseUrl handles the fallback.
   res.json({
-    appBaseUrl: resolveAppBaseUrl(req.get("origin")),
+    appBaseUrl: resolveAppBaseUrl(),
     viteUrl: resolveViteUrl()
   });
 };
