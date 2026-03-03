@@ -70,7 +70,7 @@ app.get("/api/health", healthHandler);
 
 const baseUrlsHandler = (req, res) => {
   res.json({
-    appBaseUrl: resolveAppBaseUrl(),
+    appBaseUrl: resolveAppBaseUrl(req.get("origin")),
     viteUrl: resolveViteUrl()
   });
 };

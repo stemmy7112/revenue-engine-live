@@ -89,7 +89,7 @@ If your frontend is hosted separately, set `VITE_API_BASE_URL` to your backend o
 ### Finding your base URLs
 
 - `GET /api/urls` (or `/urls`) returns the currently resolved `appBaseUrl` and `viteUrl`
-- `appBaseUrl` reflects `APP_BASE_URL` when set (otherwise the dev default); `viteUrl` comes from `VITE_API_BASE_URL` or the same dev default
+- `appBaseUrl` resolves the request `Origin` header when present, otherwise `APP_BASE_URL` (or the dev default); `viteUrl` comes from `VITE_API_BASE_URL` or the same dev default
 - Defaults use the configured Vite dev server (`http://localhost:8080` per `vite.config.ts`) when no environment variables are set
 
 ## API Endpoints
