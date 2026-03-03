@@ -30,8 +30,12 @@ const Auth = () => {
         if (error) throw error;
         toast.success("Check your email to confirm your account");
       }
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
