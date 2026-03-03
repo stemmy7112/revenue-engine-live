@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { resolveAppBaseUrl, resolveViteUrl } from "./config/urls.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -67,6 +68,16 @@ const healthHandler = (req, res) => {
 app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 
+const baseUrlsHandler = (req, res) => {
+  res.json({
+    appBaseUrl: resolveAppBaseUrl(req.headers.origin),
+    viteUrl: resolveViteUrl()
+  });
+};
+
+app.get("/urls", baseUrlsHandler);
+app.get("/api/urls", baseUrlsHandler);
+
 const createCheckoutSessionHandler = async (req, res) => {
   if (!stripe) {
     return res.status(503).json({
@@ -90,7 +101,7 @@ const createCheckoutSessionHandler = async (req, res) => {
     }
 
     const priceId = type === "sub" ? PRICE_SUB : PRICE_ONE_TIME;
-    const origin = req.headers.origin || process.env.APP_BASE_URL || "http://localhost:5173";
+    const origin = resolveAppBaseUrl(req.headers.origin);
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
