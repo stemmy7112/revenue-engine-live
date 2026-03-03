@@ -13,7 +13,7 @@ import { techStack } from "./tech-stack.js";
 import dotenv from "dotenv";
 import { validateGenerateRequest } from "./validation.js";
 
-dotenv.config();
+dotenv.config({ override: true });
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
