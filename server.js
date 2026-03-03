@@ -16,9 +16,9 @@ const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", 1);
 
-app.use(["/webhook", "/api/webhook"], bodyParser.raw({ type: "application/json" }));
+app.use("/api/webhook", bodyParser.raw({ type: "application/json" }));
 app.use((req, res, next) => {
-  if (req.path === "/webhook" || req.path === "/api/webhook") {
+  if (req.path === "/api/webhook") {
     return next();
   }
 
@@ -65,14 +65,12 @@ const healthHandler = (req, res) => {
   });
 };
 
-app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 
 const stackHandler = (req, res) => {
   res.json({ stack: techStack });
 };
 
-app.get("/stack", stackHandler);
 app.get("/api/stack", stackHandler);
 
 const createCheckoutSessionHandler = async (req, res) => {
@@ -119,7 +117,6 @@ const createCheckoutSessionHandler = async (req, res) => {
   }
 };
 
-app.post("/create-checkout-session", createCheckoutSessionHandler);
 app.post("/api/create-checkout-session", createCheckoutSessionHandler);
 
 const webhookHandler = (req, res) => {
@@ -165,7 +162,6 @@ const webhookHandler = (req, res) => {
   res.json({ received: true });
 };
 
-app.post("/webhook", webhookHandler);
 app.post("/api/webhook", webhookHandler);
 
 const generateHandler = async (req, res) => {
@@ -211,14 +207,13 @@ const generateHandler = async (req, res) => {
   }
 };
 
-app.post("/generate", generateLimiter, generateHandler);
 app.post("/api/generate", generateLimiter, generateHandler);
 
 const distPath = path.join(__dirname, "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
-  app.get(/^\/(?!api|webhook).*/, (req, res) => {
+  app.get(/^\/(?!api).*/, (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {
