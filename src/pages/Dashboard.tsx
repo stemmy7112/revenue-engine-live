@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Zap, TrendingUp, Clock, Bot, Shield, LogOut, Crown, ExternalLink } from "lucide-react";
@@ -19,12 +19,10 @@ interface Opportunity {
 }
 
 const Dashboard = () => {
-  const { user, loading, subscription, signOut, checkSubscription: checkSubscriptionRaw } = useAuth();
+  const { user, loading, subscription, signOut, checkSubscription } = useAuth();
   const navigate = useNavigate();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loadingData, setLoadingData] = useState(true);
-
-  const checkSubscription = useCallback(() => checkSubscriptionRaw(), [checkSubscriptionRaw]);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
