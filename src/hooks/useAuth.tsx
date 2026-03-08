@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     subscription_end: null,
   });
 
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     try {
       const { data, error } = await supabase.functions.invoke("check-subscription");
       if (!error && data) {
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch {
       // silent
     }
-  };
+  }, []);
 
   useEffect(() => {
     const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
@@ -66,14 +66,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => authSub.unsubscribe();
-  }, []);
+  }, [checkSubscription]);
 
   // Periodic refresh
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(checkSubscription, 60000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, checkSubscription]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -86,6 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
