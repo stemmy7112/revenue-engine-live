@@ -196,20 +196,46 @@ const generateHandler = async (req, res) => {
     const doc = new PDFDocument();
     const tempDir = process.env.TMPDIR || os.tmpdir();
     const filePath = path.join(tempDir, `${uuidv4()}.pdf`);
+    let hadError = false;
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      fs.promises.unlink(filePath).catch((err) => {
+        if (err && err.code !== "ENOENT") console.error("Failed to delete PDF:", err);
+      });
+    };
+
     doc.pipe(fs.createWriteStream(filePath));
     doc.fontSize(12).text(text);
     doc.end();
 
-    doc.on("finish", () => {
-      res.download(filePath, () => {
-        fs.unlink(filePath, (err) => {
-          if (err) console.error("Failed to delete PDF:", err);
-        });
+    doc.once("error", (err) => {
+      hadError = true;
+      console.error("PDF generation error:", err);
+      if (!res.headersSent && !res.writableEnded) {
+        res.status(500).json({ error: "PDF generation failed" });
+      }
+      cleanup();
+    });
+    doc.once("finish", () => {
+      if (hadError) {
+        cleanup();
+        return;
+      }
+      res.download(filePath, (err) => {
+        if (err) {
+          console.error("Failed to send PDF:", err);
+          if (!res.headersSent && !res.writableEnded) {
+            res.status(500).json({ error: "PDF download failed" });
+          }
+        }
+        cleanup();
       });
     });
   } catch (err) {
     console.error("Generate error:", err);
-    res.status(500).json({ error: "Failed to generate document" });
+    res.status(500).json({ error: "PDF generation failed" });
   }
 };
 
