@@ -193,7 +193,8 @@ const generateHandler = async (req, res) => {
     const text = completion.choices[0].message.content;
 
     const doc = new PDFDocument();
-    const filePath = `./${uuidv4()}.pdf`;
+    const tempDir = process.env.TMPDIR || "/tmp";
+    const filePath = path.join(tempDir, `${uuidv4()}.pdf`);
     doc.pipe(fs.createWriteStream(filePath));
     doc.fontSize(12).text(text);
     doc.end();
@@ -217,7 +218,7 @@ const distPath = path.join(__dirname, "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
-  app.get(/^\/(?!api).*/, spaLimiter, (req, res) => {
+  app.get(/^\/(?!api|webhook).*/, spaLimiter, (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {

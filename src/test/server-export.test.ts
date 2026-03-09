@@ -5,8 +5,17 @@ describe("server export for Vercel", () => {
   const originalPort = process.env.PORT;
 
   afterEach(() => {
-    process.env.VERCEL = originalEnv;
-    process.env.PORT = originalPort;
+    if (originalEnv === undefined) {
+      delete process.env.VERCEL;
+    } else {
+      process.env.VERCEL = originalEnv;
+    }
+
+    if (originalPort === undefined) {
+      delete process.env.PORT;
+    } else {
+      process.env.PORT = originalPort;
+    }
     vi.resetModules();
     vi.clearAllMocks();
   });
@@ -60,7 +69,7 @@ describe("server export for Vercel", () => {
       return { __esModule: true, default: expressFn };
     });
 
-    process.env.VERCEL = undefined;
+    delete process.env.VERCEL;
     process.env.PORT = "3001";
 
     await import("../../server.js");

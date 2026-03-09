@@ -100,7 +100,7 @@ If your frontend is hosted separately, set `VITE_API_BASE_URL` to your backend o
 - Use Stripe CLI for local webhook forwarding:
 
 ```sh
-stripe listen --forward-to localhost:10000/webhook
+stripe listen --forward-to localhost:10000/api/webhook
 ```
 
 ## Security
