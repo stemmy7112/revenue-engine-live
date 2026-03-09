@@ -72,7 +72,7 @@ const Pricing = () => {
       if (error) throw new Error(error.message);
       if (!data?.url) throw new Error("Checkout URL was not returned");
 
-      window.location.href = data.url;
+      window.open(data.url, "_blank");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to start checkout";
       toast.error(message);
