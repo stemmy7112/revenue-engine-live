@@ -95,6 +95,12 @@ const Dashboard = () => {
                 Manage <ExternalLink className="w-3 h-3" />
               </button>
             )}
+            <button
+              onClick={() => navigate("/referrals")}
+              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+            >
+              <Users className="w-4 h-4" /> Referrals
+            </button>
             <button onClick={signOut} className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
               <LogOut className="w-4 h-4" /> Sign out
             </button>
