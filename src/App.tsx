@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Success from "./pages/Success";
 import Cancel from "./pages/Cancel";
 import PricingPage from "./pages/PricingPage";
+import Referrals from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
