@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { fileURLToPath } from "url";
 import { techStack } from "./tech-stack.js";
 
@@ -193,7 +194,7 @@ const generateHandler = async (req, res) => {
     const text = completion.choices[0].message.content;
 
     const doc = new PDFDocument();
-    const tempDir = process.env.TMPDIR || "/tmp";
+    const tempDir = process.env.TMPDIR || os.tmpdir();
     const filePath = path.join(tempDir, `${uuidv4()}.pdf`);
     doc.pipe(fs.createWriteStream(filePath));
     doc.fontSize(12).text(text);
