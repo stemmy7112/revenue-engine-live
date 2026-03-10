@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { fileURLToPath } from "url";
 import { techStack } from "./tech-stack.js";
 
@@ -16,9 +17,9 @@ const __dirname = path.dirname(__filename);
 
 app.set("trust proxy", 1);
 
-app.use(["/webhook", "/api/webhook"], bodyParser.raw({ type: "application/json" }));
+app.use("/api/webhook", bodyParser.raw({ type: "application/json" }));
 app.use((req, res, next) => {
-  if (req.path === "/webhook" || req.path === "/api/webhook") {
+  if (req.path === "/api/webhook") {
     return next();
   }
 
@@ -52,6 +53,10 @@ const generateLimiter = rateLimit({
   max: 10,
   message: { error: "Too many requests, please try again later." }
 });
+const spaLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300
+});
 
 const healthHandler = (req, res) => {
   res.status(200).json({
@@ -65,14 +70,12 @@ const healthHandler = (req, res) => {
   });
 };
 
-app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 
 const stackHandler = (req, res) => {
   res.json({ stack: techStack });
 };
 
-app.get("/stack", stackHandler);
 app.get("/api/stack", stackHandler);
 
 const createCheckoutSessionHandler = async (req, res) => {
@@ -119,7 +122,6 @@ const createCheckoutSessionHandler = async (req, res) => {
   }
 };
 
-app.post("/create-checkout-session", createCheckoutSessionHandler);
 app.post("/api/create-checkout-session", createCheckoutSessionHandler);
 
 const webhookHandler = (req, res) => {
@@ -165,7 +167,6 @@ const webhookHandler = (req, res) => {
   res.json({ received: true });
 };
 
-app.post("/webhook", webhookHandler);
 app.post("/api/webhook", webhookHandler);
 
 const generateHandler = async (req, res) => {
@@ -193,36 +194,69 @@ const generateHandler = async (req, res) => {
     const text = completion.choices[0].message.content;
 
     const doc = new PDFDocument();
-    const filePath = `./${uuidv4()}.pdf`;
+    const tempDir = process.env.TMPDIR || os.tmpdir();
+    const filePath = path.join(tempDir, `${uuidv4()}.pdf`);
+    let hadError = false;
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      fs.promises.unlink(filePath).catch((err) => {
+        if (err && err.code !== "ENOENT") console.error("Failed to delete PDF:", err);
+      });
+    };
+
     doc.pipe(fs.createWriteStream(filePath));
     doc.fontSize(12).text(text);
     doc.end();
 
-    doc.on("finish", () => {
-      res.download(filePath, () => {
-        fs.unlink(filePath, (err) => {
-          if (err) console.error("Failed to delete PDF:", err);
-        });
+    doc.once("error", (err) => {
+      hadError = true;
+      console.error("PDF generation error:", err);
+      if (!res.headersSent && !res.writableEnded) {
+        res.status(500).json({ error: "PDF generation failed" });
+      }
+      cleanup();
+    });
+    doc.once("finish", () => {
+      if (hadError) {
+        cleanup();
+        return;
+      }
+      res.download(filePath, (err) => {
+        if (err) {
+          console.error("Failed to send PDF:", err);
+          if (!res.headersSent && !res.writableEnded) {
+            res.status(500).json({ error: "PDF download failed" });
+          }
+        }
+        cleanup();
       });
     });
   } catch (err) {
     console.error("Generate error:", err);
-    res.status(500).json({ error: "Failed to generate document" });
+    res.status(500).json({ error: "PDF generation failed" });
   }
 };
 
-app.post("/generate", generateLimiter, generateHandler);
 app.post("/api/generate", generateLimiter, generateHandler);
 
 const distPath = path.join(__dirname, "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
-  app.get(/^\/(?!api|webhook).*/, (req, res) => {
+  app.get(/^\/(?!api|webhook).*/, spaLimiter, (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {
   app.use(express.static("public"));
 }
 
-app.listen(process.env.PORT || 10000, () => console.log("Server running"));
+const port = process.env.PORT || 10000;
+const isVercel = process.env.VERCEL === "1";
+
+if (!isVercel) {
+  app.listen(port, () => console.log(`Server running on port ${port}`));
+}
+
+export default app;

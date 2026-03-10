@@ -65,7 +65,7 @@ The server automatically serves `dist/` when present and falls back to `public/`
 
 - Build command: `npm install && npm run build`
 - Start command: `npm run start`
-- Healthcheck path: `/api/health` (or `/health`)
+- Healthcheck path: `/api/health`
 - Required env vars:
 	- `STRIPE_SECRET_KEY`
 	- `STRIPE_WEBHOOK_SECRET`
@@ -88,10 +88,10 @@ If your frontend is hosted separately, set `VITE_API_BASE_URL` to your backend o
 
 ## API Endpoints
 
-- `GET /health` - health status + integration availability
-- `POST /create-checkout-session` - creates Stripe checkout session
-- `POST /webhook` - Stripe webhook receiver
-- `POST /generate` - gated OpenAI PDF generation endpoint
+- `GET /api/health` - health status + integration availability
+- `POST /api/create-checkout-session` - creates Stripe checkout session
+- `POST /api/webhook` - Stripe webhook receiver
+- `POST /api/generate` - gated OpenAI PDF generation endpoint
 
 ## Stripe Notes
 
@@ -100,7 +100,7 @@ If your frontend is hosted separately, set `VITE_API_BASE_URL` to your backend o
 - Use Stripe CLI for local webhook forwarding:
 
 ```sh
-stripe listen --forward-to localhost:10000/webhook
+stripe listen --forward-to localhost:10000/api/webhook
 ```
 
 ## Security
