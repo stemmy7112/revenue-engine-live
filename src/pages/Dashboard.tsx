@@ -43,15 +43,16 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) checkSubscription();
-  }, [user]);
+  }, [user, checkSubscription]);
 
   const handleManageSubscription = async () => {
     try {
       const { data, error } = await supabase.functions.invoke("customer-portal");
       if (error) throw new Error(error.message);
       if (data?.url) window.open(data.url, "_blank");
-    } catch (error: any) {
-      toast.error(error.message || "Could not open subscription manager");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Could not open subscription manager";
+      toast.error(message);
     }
   };
 
