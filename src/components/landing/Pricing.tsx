@@ -82,16 +82,16 @@ const Pricing = () => {
   };
 
   return (
-    <section id="pricing" className="py-24 relative">
+    <section id="pricing" className="py-16 sm:py-24 relative">
       <div className="absolute inset-0 grid-pattern opacity-20" />
-      <div className="relative z-10 container max-w-6xl mx-auto px-6">
+      <div className="relative z-10 container max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4">
+          <h2 className="text-3xl sm:text-5xl font-bold mb-4">
             Simple, Transparent <span className="text-gradient">Pricing</span>
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
@@ -103,11 +103,10 @@ const Pricing = () => {
           {tiers.map((tier, i) => (
             <motion.div
               key={tier.name}
-              className={`relative rounded-xl p-8 flex flex-col ${
-                tier.popular
+              className={`relative rounded-xl p-6 sm:p-8 flex flex-col ${tier.popular
                   ? "bg-card border-2 border-glow/30 shadow-glow"
                   : "bg-card border border-border"
-              }`}
+                }`}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -125,7 +124,7 @@ const Pricing = () => {
               </div>
 
               <div className="mb-8">
-                <span className="text-5xl font-bold">${tier.price}</span>
+                <span className="text-4xl sm:text-5xl font-bold">${tier.price}</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
 
@@ -142,11 +141,10 @@ const Pricing = () => {
                 type="button"
                 onClick={() => handleCheckout(tier.tier, tier.name)}
                 disabled={loadingTier === tier.name}
-                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                  tier.popular
+                className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${tier.popular
                     ? "bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-glow-lg hover:scale-[1.02]"
                     : "border border-border text-secondary-foreground hover:bg-secondary"
-                } ${loadingTier === tier.name ? "opacity-70 cursor-not-allowed" : ""}`}
+                  } ${loadingTier === tier.name ? "opacity-70 cursor-not-allowed" : ""}`}
               >
                 {loadingTier === tier.name ? "Processing..." : "Get Started"}
                 <ArrowRight className="w-4 h-4" />
