@@ -86,6 +86,13 @@ The server automatically serves `dist/` when present and falls back to `public/`
 - Optional frontend env var:
 	- `VITE_API_BASE_URL` (use only if API is on a separate domain)
 
+## Render Deployment
+
+- The repo includes `render.yaml` configured for a Node web service with `npm install && npm run build` and `npm run start`.
+- On Render, create a new Web Service from this repo and pick `render.yaml` so the platform applies the build/start commands automatically.
+- Add the required environment variables (`STRIPE_*`, `OPENAI_API_KEY`) and optional ones (`APP_BASE_URL`, `VITE_API_BASE_URL`, `PORT`) in the Render dashboard.
+- Keep the health check path on `/api/health` (or `/health`) to align with the service config.
+
 ## Frontend/Backend Routing in Dev
 
 - Frontend runs on `http://localhost:8080`
