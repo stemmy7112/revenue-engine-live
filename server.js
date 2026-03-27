@@ -197,9 +197,10 @@ const generateHandler = async (req, res) => {
   const { email, content, letterType } = validation.data;
   const normalizedEmail = normalizeEmail(email);
 
-  if (!hasAccess(normalizedEmail)) {
-    return res.status(403).json({ error: "Payment required" });
-  }
+  // Free for personal use - bypass payment check
+  // if (!hasAccess(normalizedEmail)) {
+  //   return res.status(403).json({ error: "Payment required" });
+  // }
 
   try {
     const prompt = `Write a professional ${letterType}. Details: ${content}`;

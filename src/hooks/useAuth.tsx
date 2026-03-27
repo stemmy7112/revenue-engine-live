@@ -30,18 +30,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const checkSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (!error && data) {
-        setSubscription({
-          subscribed: data.subscribed ?? false,
-          plan: data.plan ?? null,
-          subscription_end: data.subscription_end ?? null,
-        });
-      }
-    } catch {
-      // silent
-    }
+    // Free for personal use - always return subscribed
+    setSubscription({
+      subscribed: true,
+      plan: "personal",
+      subscription_end: null,
+    });
   };
 
   useEffect(() => {
