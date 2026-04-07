@@ -86,6 +86,10 @@ The server automatically serves `dist/` when present and falls back to `public/`
 - Optional frontend env var:
 	- `VITE_API_BASE_URL` (use only if API is on a separate domain)
 
+## Deploy to Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stemmy7112/revenue-engine-live)
+
 ## Frontend/Backend Routing in Dev
 
 - Frontend runs on `http://localhost:8080`
