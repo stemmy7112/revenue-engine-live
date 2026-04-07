@@ -15,6 +15,14 @@ import { validateGenerateRequest } from "./validation.js";
 
 dotenv.config({ override: true });
 const app = express();
+
+// Rate limiter for SPA index route to protect filesystem access (sendFile)
+const spaLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false // Disable the `X-RateLimit-*` headers
+});
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -237,7 +245,7 @@ const distPath = path.join(__dirname, "dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
 
-  app.get(/^\/(?!api|webhook).*/, (req, res) => {
+  app.get(/^\/(?!api|webhook).*/, spaLimiter, (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 } else {
