@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Zap, TrendingUp, Clock, Bot, Shield, LogOut, Crown, ExternalLink, Users } from "lucide-react";
+import { Zap, TrendingUp, Clock, Bot, Shield, LogOut, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -43,17 +43,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) checkSubscription();
-  }, [user]);
-
-  const handleManageSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) throw new Error(error.message);
-      if (data?.url) window.open(data.url, "_blank");
-    } catch (error: any) {
-      toast.error(error.message || "Could not open subscription manager");
-    }
-  };
+  }, [user, checkSubscription]);
 
   if (loading || !user) {
     return (
@@ -63,8 +53,9 @@ const Dashboard = () => {
     );
   }
 
-  const gated = !subscription.subscribed;
-  const displayedOpportunities = gated ? opportunities.slice(0, 3) : opportunities;
+  // Free for personal use - show all opportunities
+  const gated = false;
+  const displayedOpportunities = opportunities;
 
   const getScoreColor = (score: number) => {
     if (score >= 3) return "text-emerald-400";
@@ -81,20 +72,7 @@ const Dashboard = () => {
             AutoIncome
           </div>
           <div className="flex items-center gap-4">
-            {subscription.subscribed && (
-              <span className="text-xs px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
-                <Crown className="w-3 h-3" />
-                {subscription.plan?.toUpperCase()}
-              </span>
-            )}
-            {subscription.subscribed && (
-              <button
-                onClick={handleManageSubscription}
-                className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
-              >
-                Manage <ExternalLink className="w-3 h-3" />
-              </button>
-            )}
+            {/* Free for personal use - subscription UI hidden */}
             <button
               onClick={() => navigate("/referrals")}
               className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
@@ -161,25 +139,6 @@ const Dashboard = () => {
             ))
           )}
         </div>
-
-        {gated && (
-          <motion.div
-            className="mt-8 text-center p-8 rounded-xl bg-card border border-primary/20"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <h3 className="text-xl font-bold mb-2">Unlock All Opportunities</h3>
-            <p className="text-muted-foreground mb-4">
-              Subscribe to see all {opportunities.length} ranked opportunities with full details.
-            </p>
-            <button
-              onClick={() => navigate("/pricing")}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-primary text-primary-foreground font-semibold shadow-glow hover:shadow-glow-lg transition-all"
-            >
-              View Plans
-            </button>
-          </motion.div>
-        )}
       </main>
     </div>
   );
